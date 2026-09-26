@@ -7,21 +7,23 @@ Portal de estudos rodando num Kubernetes local (kind), com GitOps via Argo CD.
 | Ambiente | Endereço | Atualização |
 |---|---|---|
 | dev | http://dev.matiassystem.localhost | Automática a cada merge no `main` |
-| hml | http://hml.matiassystem.localhost | Promoção via PR (workflow `promote`) |
-| prod | http://matiassystem.localhost | Promoção via PR + aprovação no Environment `production` |
+| hml | http://hml.matiassystem.localhost | Automática depois do dev (PR aberto e mergeado pelo bot) |
+| prod | http://matiassystem.localhost | Automática depois do hml, **após aprovação** no Environment `production` |
 | Argo CD | http://argocd.localhost | — |
 
 ## Fluxo de desenvolvimento
 
 ```
-branch → docker compose (local) → PR (pr-check) → merge → dev → promote hml → promote prod
+branch → docker compose (local) → PR (pr-check) → merge → dev → hml → ⏸ aprovação → prod
 ```
 
 1. **Local:** `git checkout -b minha-mudanca` e `docker compose up -d`. Edite `app/html/` e veja em http://localhost:8081 (F5, sem rebuild).
 2. **PR:** push da branch e abra um PR. O `pr-check` roda Kustomize, build + Trivy e gitleaks.
 3. **Dev:** o merge no `main` gera a imagem `ghcr.io/a20n21/matiassystem:<commit>` e o Argo CD atualiza o dev.
-4. **Homologação:** Actions → `promote` → `hml`. Revise e faça merge do PR aberto.
-5. **Produção:** Actions → `promote` → `prod`. Aprove o Environment `production`, revise e faça merge do PR.
+4. **Homologação:** automática. O bot abre o PR de promoção, espera o `pr-check` e faz o merge.
+5. **Produção:** o `promote` pausa pedindo aprovação (Actions → execução → **Review deployments**). Aprovado, o bot abre o PR, espera o `pr-check` e faz o merge.
+
+O único passo humano depois do merge do código é a **aprovação de prod**. O `promote` também pode ser disparado à mão (Actions → promote → Run workflow).
 
 Rollback: `git revert` do PR de promoção.
 
