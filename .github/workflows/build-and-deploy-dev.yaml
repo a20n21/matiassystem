@@ -1,0 +1,68 @@
+name: build-and-deploy-dev
+
+# Roda quando o site muda (app/) ou manualmente pela aba Actions.
+# O commit de tag que este workflow faz em k8s/ não dispara ele de novo.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/build-and-deploy-dev.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # commitar a tag nova no overlay de dev
+  packages: write   # publicar a imagem no GHCR
+
+# Evita duas execuções simultâneas brigando pelo mesmo commit de tag
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/matiassystem
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Definir tag (hash curto do commit)
+        run: echo "TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build e push da imagem
+        uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: true
+          tags: ${{ env.IMAGE }}:${{ env.TAG }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Atualizar tag no overlay de dev
+        run: |
+          yq -i '(.images[] | select(.name == "matiassystem")) |= (.newName = strenv(IMAGE) | .newTag = strenv(TAG))' \
+            k8s/overlays/dev/kustomization.yaml
+          git diff
+
+      - name: Commit da tag nova
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s/overlays/dev/kustomization.yaml
+          git diff --cached --quiet && { echo "Tag já atualizada"; exit 0; }
+          git commit -m "deploy(dev): matiassystem ${TAG}"
+          git pull --rebase origin main
+          git push origin HEAD:main
