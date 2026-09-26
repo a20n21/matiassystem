@@ -3,19 +3,155 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MatiasSystem</title>
+  <title>MatiasSystem · Portal de estudos</title>
+  <meta name="description" content="Portal de estudos DevOps e Cloud rodando em Kubernetes local com GitOps.">
   <!-- CSS em arquivo próprio: a CSP (style-src 'self') bloqueia CSS inline -->
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <h1>Matias<span>System</span></h1>
-  <p class="lead">Aplicação rodando no Kubernetes local (kind).</p>
-  <div class="grid">
-    <div class="card"><h2>Kubernetes</h2><p>Deployment com múltiplas réplicas e Service.</p></div>
-    <div class="card"><h2>Docker</h2><p>Imagem nginx sem root, construída localmente.</p></div>
-    <div class="card"><h2>DevOps</h2><p>Base para CI/CD, Ingress e observabilidade.</p></div>
-  </div>
-  <div class="pod">Servido pelo pod: <strong>__HOSTNAME__</strong></div>
-  <p class="lead footer">Esteira: PR → dev → hml → aprovação → prod</p>
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">Matias<span>System</span></a>
+      <nav class="nav">
+        <a href="#trilhas">Trilhas</a>
+        <a href="#esteira">Esteira</a>
+        <a href="#roadmap">Roadmap</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <p class="eyebrow">Portal de estudos · DevOps &amp; Cloud</p>
+      <h1>Aprendendo na prática,<br>com a própria infraestrutura.</h1>
+      <p class="lead">
+        Este site é o conteúdo e o laboratório ao mesmo tempo: ele roda num Kubernetes local,
+        é publicado por GitOps e passa por quatro camadas de segurança antes de chegar aqui.
+      </p>
+      <div class="pod">
+        <span class="dot"></span>
+        Servido pelo pod <strong>__HOSTNAME__</strong>
+      </div>
+    </section>
+
+    <section id="trilhas" class="wrap section">
+      <h2>Trilhas de estudo</h2>
+      <p class="section-lead">O que estou estudando e em que pé está cada assunto.</p>
+      <div class="grid">
+        <article class="card">
+          <div class="card-head">
+            <h3>Kubernetes</h3>
+            <span class="badge badge-doing">Em andamento</span>
+          </div>
+          <p>Cluster kind, Deployments, Services, Ingress com Traefik, HPA e metrics-server.</p>
+          <ul class="tags"><li>kind</li><li>Kustomize</li><li>HPA</li></ul>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h3>GitOps &amp; CI/CD</h3>
+            <span class="badge badge-doing">Em andamento</span>
+          </div>
+          <p>Argo CD com app of apps, GitHub Actions, promoção dev → hml → prod via PR.</p>
+          <ul class="tags"><li>Argo CD</li><li>Actions</li><li>GHCR</li></ul>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h3>DevSecOps</h3>
+            <span class="badge badge-doing">Em andamento</span>
+          </div>
+          <p>Segurança em cada etapa: do commit ao cluster e à aplicação rodando.</p>
+          <ul class="tags"><li>Trivy</li><li>Kyverno</li><li>ZAP</li><li>gitleaks</li></ul>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h3>Observabilidade</h3>
+            <span class="badge badge-next">Próximo</span>
+          </div>
+          <p>Métricas, dashboards e logs centralizados dos ambientes.</p>
+          <ul class="tags"><li>Prometheus</li><li>Grafana</li><li>Loki</li></ul>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h3>Terraform</h3>
+            <span class="badge badge-plan">Planejado</span>
+          </div>
+          <p>Infraestrutura como código: módulos, estado remoto e boas práticas.</p>
+          <ul class="tags"><li>IaC</li><li>Módulos</li></ul>
+        </article>
+        <article class="card">
+          <div class="card-head">
+            <h3>AWS</h3>
+            <span class="badge badge-plan">Planejado</span>
+          </div>
+          <p>Fundamentos de cloud: IAM, redes, containers e serviços gerenciados.</p>
+          <ul class="tags"><li>IAM</li><li>VPC</li><li>ECS</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="esteira" class="wrap section">
+      <h2>Como este site chega até você</h2>
+      <p class="section-lead">Cada mudança passa por esta esteira. O único passo humano depois do merge é a aprovação de produção.</p>
+      <ol class="pipeline">
+        <li>
+          <span class="step">1</span>
+          <div><h3>Pull request</h3><p>gitleaks, Trivy (imagem e manifestos) e testes das políticas do Kyverno.</p></div>
+        </li>
+        <li>
+          <span class="step">2</span>
+          <div><h3>dev</h3><p>Merge gera a imagem no GHCR e o Argo CD aplica sozinho.</p></div>
+        </li>
+        <li>
+          <span class="step">3</span>
+          <div><h3>Homologação</h3><p>Promoção automática. O OWASP ZAP ataca o site e barra regressões.</p></div>
+        </li>
+        <li>
+          <span class="step step-human">4</span>
+          <div><h3>Aprovação</h3><p>Revisão humana, com o resultado do ZAP em mãos.</p></div>
+        </li>
+        <li>
+          <span class="step">5</span>
+          <div><h3>Produção</h3><p>PR de promoção mergeado pelo bot. Kyverno valida cada pod.</p></div>
+        </li>
+      </ol>
+    </section>
+
+    <section id="roadmap" class="wrap section">
+      <h2>Roadmap</h2>
+      <div class="roadmap">
+        <div class="col">
+          <h3 class="col-title done">Feito</h3>
+          <ul>
+            <li>Cluster kind com Traefik e metrics-server</li>
+            <li>Argo CD com app of apps</li>
+            <li>Ambientes dev, hml e prod com Kustomize</li>
+            <li>Esteira com aprovação de produção</li>
+            <li>Trivy, gitleaks, Kyverno e ZAP</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h3 class="col-title next">Próximo</h3>
+          <ul>
+            <li>Prometheus e Grafana</li>
+            <li>Conteúdo das trilhas em Markdown</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h3 class="col-title later">Depois</h3>
+          <ul>
+            <li>Backend e banco de dados (Postgres)</li>
+            <li>Secrets com Sealed Secrets</li>
+            <li>Acompanhamento de progresso das trilhas</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <p>MatiasSystem · Kubernetes local (kind) · GitOps com Argo CD</p>
+    </div>
+  </footer>
 </body>
 </html>
