@@ -9,7 +9,8 @@ resources:
   - ../../base
 images:
   - name: matiassystem
-    newTag: "1.0"
+    newTag: "344fb3a"
+    newName: ghcr.io/a20n21/matiassystem
 replicas:
   - name: matiassystem
     count: 1
