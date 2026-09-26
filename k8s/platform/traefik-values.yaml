@@ -10,8 +10,10 @@ ports:
     hostPort: 80
   websecure:
     hostPort: 443
+# Sem LoadBalancer no kind (ficaria <pending> e o Argo CD marcaria "Progressing")
 service:
-  type: ClusterIP
+  spec:
+    type: ClusterIP
 
 # hostPort 80/443 só cabe um pod por nó: derruba o antigo antes de subir o novo
 updateStrategy:
