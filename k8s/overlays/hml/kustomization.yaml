@@ -16,7 +16,7 @@ configMapGenerator:
 images:
   - name: matiassystem
     newName: ghcr.io/a20n21/matiassystem
-    newTag: "cbd3272"
+    newTag: "1efe002"
 replicas:
   - name: matiassystem
     count: 2
