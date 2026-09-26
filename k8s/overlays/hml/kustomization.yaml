@@ -7,7 +7,7 @@ labels:
 resources:
   - namespace.yaml
   - ../../base
-  - zap/zap-baseline-job.yaml   # DAST (ZAP) depois de cada sync
+  - zap/zap-baseline-job.yaml # DAST (ZAP) depois de cada sync
 configMapGenerator:
   - name: zap-rules
     files:
@@ -16,7 +16,7 @@ configMapGenerator:
 images:
   - name: matiassystem
     newName: ghcr.io/a20n21/matiassystem
-    newTag: "bb447d2"
+    newTag: "cbd3272"
 replicas:
   - name: matiassystem
     count: 2
