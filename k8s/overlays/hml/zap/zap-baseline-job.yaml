@@ -1,6 +1,7 @@
 # DAST na homologação: o Argo CD roda este Job depois de cada sync da hml (PostSync).
-# Se o ZAP encontrar uma regra FAIL (zap/rules.tsv), o Job falha e o sync da hml
-# aparece como falho no Argo CD — sinal para NÃO aprovar a promoção para prod.
+# 1. O ZAP ataca o site. Uma regra FAIL (zap/rules.tsv) faz o Job falhar.
+# 2. O resultado vira um commit status no GitHub (security/zap-hml), no commit da
+#    versão testada. O workflow "promote" (prod) só pede aprovação se ele for success.
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -33,32 +34,26 @@ spec:
           emptyDir: {}
         - name: tmp
           emptyDir: {}
-        - name: rules
+        - name: scripts
           configMap:
-            name: zap-rules
-      initContainers:
-        # O ZAP espera rules.tsv em /zap/wrk, que precisa ser gravável (relatórios)
-        - name: copy-rules
-          image: ghcr.io/zaproxy/zaproxy:2.16.1
-          command: ["cp", "/rules/rules.tsv", "/zap/wrk/rules.tsv"]
-          volumeMounts:
-            - name: rules
-              mountPath: /rules
-            - name: wrk
-              mountPath: /zap/wrk
-          resources:
-            requests: {cpu: 10m, memory: 16Mi}
-            limits: {cpu: 100m, memory: 64Mi}
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: [ALL]
+            name: zap
       containers:
         - name: zap
           image: ghcr.io/zaproxy/zaproxy:2.16.1
-          # -c: regras FAIL/IGNORE; -I: WARN não falha o Job (só FAIL)
-          args: ["zap-baseline.py", "-t", "http://matiassystem", "-c", "rules.tsv", "-I"]
+          command: ["sh", "/scripts/run.sh"]
+          env:
+            - name: TARGET
+              value: http://matiassystem
+            - name: GITHUB_REPOSITORY
+              value: a20n21/matiassystem
+            # Token fine-grained só com "Commit statuses: write" neste repositório.
+            # Criado à mão (fora do Git). Sem ele o ZAP roda, mas não publica o status.
+            - name: GITHUB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: zap-github-status
+                  key: token
+                  optional: true
           volumeMounts:
             - name: wrk
               mountPath: /zap/wrk
@@ -66,9 +61,12 @@ spec:
               mountPath: /home/zap
             - name: tmp
               mountPath: /tmp
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
           resources:
-            requests: {cpu: 250m, memory: 768Mi}
-            limits: {cpu: "1", memory: 1536Mi}
+            requests: {cpu: 250m, memory: 768Mi, ephemeral-storage: 256Mi}
+            limits: {cpu: "1", memory: 1536Mi, ephemeral-storage: 1Gi}
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
