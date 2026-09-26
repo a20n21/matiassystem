@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: matiassystem
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: matiassystem.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: matiassystem
+                port:
+                  number: 80

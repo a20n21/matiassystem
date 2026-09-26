@@ -1,0 +1,14 @@
+# Traefik no nó control-plane, que recebe as portas 80/443 do Windows (extraPortMappings do kind)
+nodeSelector:
+  ingress-ready: "true"
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+ports:
+  web:
+    hostPort: 80
+  websecure:
+    hostPort: 443
+service:
+  type: ClusterIP
