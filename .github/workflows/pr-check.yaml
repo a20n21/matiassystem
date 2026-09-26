@@ -23,11 +23,28 @@ jobs:
       - uses: actions/checkout@v5
       - name: Renderizar Kustomize (dev, hml, prod)
         run: |
+          mkdir -p rendered
           for env in dev hml prod; do
             echo "::group::$env"
-            kubectl kustomize "k8s/overlays/$env"
+            kubectl kustomize "k8s/overlays/$env" | tee "rendered/$env.yaml"
             echo "::endgroup::"
           done
+      # Analisa o YAML final de cada ambiente (base + overlay), não os arquivos soltos
+      - name: Scan de configuração (Trivy IaC)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: rendered
+          trivyignores: .trivyignore
+          severity: LOW,MEDIUM,HIGH,CRITICAL
+          exit-code: "1"
+      # Mesmas políticas que o Kyverno aplica no cluster: o PR falha antes do deploy
+      - name: Testar políticas do Kyverno
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/kyverno/kyverno-cli:v1.19.1 \
+            apply k8s/platform/policies \
+            --resource rendered/dev.yaml --resource rendered/hml.yaml --resource rendered/prod.yaml \
+            -f k8s/platform/policy-tests/values.yaml --table
 
   build-scan:
     name: build-scan

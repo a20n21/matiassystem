@@ -19,11 +19,25 @@ spec:
       # Credencial do GHCR (imagem privada). Criada à mão em cada namespace, fora do Git.
       imagePullSecrets:
         - name: ghcr-pull
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10101
+        runAsGroup: 10101
+        seccompProfile:
+          type: RuntimeDefault
+      volumes:
+        # Única área gravável: o nginx grava pid e arquivos temporários em /tmp
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
       containers:
         - name: web
+          # Nome/tag substituídos por cada overlay (images: no kustomization.yaml)
           image: matiassystem:1.0
-          # Imagem carregada via "kind load", não existe em registry
           imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -44,5 +58,7 @@ spec:
               memory: 64Mi
               ephemeral-storage: 128Mi
           securityContext:
-            runAsNonRoot: true
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]

@@ -1,0 +1,9 @@
+# Kyverno enxuto para o cluster local
+admissionController:
+  replicas: 1
+backgroundController:
+  enabled: true
+reportsController:
+  enabled: true      # gera PolicyReports (visíveis no Freelens e via kubectl)
+cleanupController:
+  enabled: false     # não usamos CleanupPolicies

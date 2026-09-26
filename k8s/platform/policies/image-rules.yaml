@@ -1,0 +1,26 @@
+# Só imagens do registry do projeto (ou de ferramentas aprovadas) e nunca :latest.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
+metadata:
+  name: image-rules
+spec:
+  validationActions: [Deny]
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: [v1]
+        operations: [CREATE, UPDATE]
+        resources: [pods]
+    # Vale para os namespaces marcados nos overlays (k8s/overlays/*/namespace.yaml)
+    namespaceSelector:
+      matchLabels:
+        matiassystem.io/policies: enforced
+  validations:
+    - message: "Imagem fora dos registries permitidos (ghcr.io/a20n21/, ghcr.io/zaproxy/)."
+      expression: >-
+        object.spec.containers.all(c, c.image.startsWith('ghcr.io/a20n21/')
+          || c.image.startsWith('ghcr.io/zaproxy/'))
+    - message: "Imagem precisa de tag explícita e diferente de :latest."
+      expression: >-
+        object.spec.containers.all(c, c.image.split('/')[size(c.image.split('/')) - 1].contains(':')
+          && !c.image.endsWith(':latest'))
