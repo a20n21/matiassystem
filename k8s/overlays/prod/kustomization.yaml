@@ -11,7 +11,7 @@ resources:
 # Atualizado pelo workflow "promote" (hml → prod)
 images:
   - name: matiassystem
-    newTag: "cbd3272"
+    newTag: "1efe002"
     newName: ghcr.io/a20n21/matiassystem
 replicas:
   - name: matiassystem
