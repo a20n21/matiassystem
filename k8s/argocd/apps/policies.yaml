@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"   # depois do Kyverno (CRDs), antes das aplicações
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:a20n21/matiassystem.git
+    targetRevision: main
+    path: k8s/platform/policies
+  destination:
+    server: https://kubernetes.default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - SkipDryRunOnMissingResource=true   # no primeiro sync, os CRDs podem ainda não existir

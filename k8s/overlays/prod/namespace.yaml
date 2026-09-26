@@ -2,3 +2,5 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: matiassystem-prod
+  labels:
+    matiassystem.io/policies: enforced   # ativa as políticas do Kyverno (k8s/platform/policies)

@@ -38,6 +38,13 @@ jobs:
           trivyignores: .trivyignore
           severity: LOW,MEDIUM,HIGH,CRITICAL
           exit-code: "1"
+      # Mesmas políticas que o Kyverno aplica no cluster: o PR falha antes do deploy
+      - name: Testar políticas do Kyverno
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo ghcr.io/kyverno/kyverno-cli:v1.19.1 \
+            apply k8s/platform/policies \
+            --resource rendered/dev.yaml --resource rendered/hml.yaml --resource rendered/prod.yaml \
+            -f k8s/platform/policy-tests/values.yaml --table
 
   build-scan:
     name: build-scan

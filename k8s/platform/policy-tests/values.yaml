@@ -1,0 +1,14 @@
+# Usado só pelo Kyverno CLI no pr-check (fora de k8s/platform/policies, que o Argo CD aplica).
+# O CLI não lê labels dos Namespaces renderizados; eles são informados aqui.
+apiVersion: cli.kyverno.io/v1alpha1
+kind: Values
+namespaceSelector:
+  - name: matiassystem-dev
+    labels:
+      matiassystem.io/policies: enforced
+  - name: matiassystem-hml
+    labels:
+      matiassystem.io/policies: enforced
+  - name: matiassystem-prod
+    labels:
+      matiassystem.io/policies: enforced
