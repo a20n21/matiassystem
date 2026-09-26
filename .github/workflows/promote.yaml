@@ -22,6 +22,7 @@ permissions:
   contents: write        # merge do PR de promoção
   pull-requests: write   # abrir o PR
   actions: write         # disparar a próxima etapa (hml → prod)
+  statuses: read         # ler o resultado do ZAP (security/zap-hml)
 
 concurrency:
   group: promote-${{ inputs.target }}
@@ -46,6 +47,37 @@ jobs:
             exit 1
           fi
           echo "Nenhuma promoção de hml pendente."
+
+      - uses: actions/checkout@v5
+        if: inputs.target == 'prod'
+
+      # O Job do ZAP (PostSync da hml) publica security/zap-hml no commit da versão testada.
+      # Esperamos esse resultado: só com success alguém recebe o pedido de aprovação.
+      - name: Exigir ZAP verde na hml
+        if: inputs.target == 'prod'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG=$(yq '.images[] | select(.name == "matiassystem") | .newTag' k8s/overlays/hml/kustomization.yaml)
+          SHA=$(gh api "repos/$GITHUB_REPOSITORY/commits/$TAG" --jq .sha)
+          echo "Versão na hml: $TAG ($SHA). Aguardando security/zap-hml..."
+          # hml precisa sincronizar (polling do Argo CD, até ~3 min) e o ZAP rodar (~4 min)
+          for i in $(seq 1 75); do
+            status=$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA/statuses" \
+              --jq '[.[] | select(.context == "security/zap-hml")][0] | "\(.state)|\(.description)"')
+            state=${status%%|*}
+            case "$state" in
+              success)
+                echo "::notice::ZAP aprovou a versão $TAG na hml: ${status#*|}"
+                exit 0 ;;
+              failure|error)
+                echo "::error::ZAP reprovou a versão $TAG na hml: ${status#*|}. Veja: kubectl -n matiassystem-hml logs job/zap-baseline"
+                exit 1 ;;
+            esac
+            sleep 20
+          done
+          echo "::error::Nenhum resultado do ZAP para $TAG em 25 min. O Job rodou? O Secret zap-github-status existe na hml?"
+          exit 1
 
   promote:
     needs: guard

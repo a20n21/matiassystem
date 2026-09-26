@@ -9,9 +9,11 @@ resources:
   - ../../base
   - zap/zap-baseline-job.yaml # DAST (ZAP) depois de cada sync
 configMapGenerator:
-  - name: zap-rules
+  - name: zap
     files:
       - zap/rules.tsv
+      - zap/run.sh
+      - zap/post_status.py
 # Atualizado pelo workflow "promote" (dev → hml)
 images:
   - name: matiassystem

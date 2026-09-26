@@ -49,6 +49,8 @@ jobs:
           context: app
           push: true
           tags: ${{ env.IMAGE }}:${{ env.TAG }}
+          build-args: |
+            VERSION=${{ env.TAG }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}

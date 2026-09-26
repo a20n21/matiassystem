@@ -36,13 +36,21 @@ Rollback: `git revert` do PR de promoção.
 | Configuração dos manifestos | Trivy config | `pr-check` / manifests | PR |
 | Políticas do cluster (teste offline) | Kyverno CLI | `pr-check` / manifests | PR |
 | Políticas do cluster (admissão) | Kyverno | cluster, namespaces `matiassystem-*` | `kubectl apply` / sync |
-| Ataque à aplicação rodando (DAST) | OWASP ZAP | Job PostSync na hml | Sync da hml |
+| Ataque à aplicação rodando (DAST) | OWASP ZAP | Job PostSync na hml | Sync da hml **e promoção para prod** |
 
-**Antes de aprovar prod:** no Argo CD, confira se o último sync de `matiassystem-hml` terminou com sucesso. Se o Job `zap-baseline` falhou, não aprove; os achados estão nos logs do Job:
+**ZAP como gate de prod:** o Job do ZAP publica o resultado no GitHub como commit status
+`security/zap-hml`, no commit da versão testada (lida de `/version.txt`). O `guard` do
+workflow `promote` (prod) espera esse status: com `success` o pedido de aprovação é criado;
+com `failure`, ou sem resultado em 25 min, a promoção para e ninguém recebe o pedido.
+
+Achados do último scan:
 
 ```powershell
 kubectl -n matiassystem-hml logs job/zap-baseline
 ```
+
+O Job usa o Secret `zap-github-status` (token fine-grained com *Commit statuses: Read and write*
+e *Contents: Read-only* só neste repositório), criado à mão ou pelo `bootstrap.ps1`.
 
 Exceções ficam em `.trivyignore.yaml` (Trivy) e `k8s/overlays/hml/zap/rules.tsv` (ZAP), sempre com justificativa.
 
