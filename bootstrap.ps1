@@ -7,7 +7,7 @@ $ClusterName  = 'matiassystem'
 $ArgoChart    = '10.9.2'
 $RepoUrl      = 'git@github.com:a20n21/matiassystem.git'
 $GhcrUser     = 'a20n21'
-$AppNamespaces = 'matiassystem-dev', 'matiassystem-prod'
+$AppNamespaces = 'matiassystem-dev', 'matiassystem-hml', 'matiassystem-prod'
 
 # 1. Cluster
 if (-not (kind get clusters | Select-String -SimpleMatch $ClusterName)) {

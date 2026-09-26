@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # commitar a tag nova no overlay de dev
+  contents: read
   packages: write   # publicar a imagem no GHCR
 
 # Evita duas execuções simultâneas brigando pelo mesmo commit de tag
@@ -27,6 +27,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          # O commit da tag vai direto no main protegido: só a deploy key tem bypass
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
       - name: Definir tag (hash curto do commit)
         run: echo "TAG=${GITHUB_SHA::7}" >> "$GITHUB_ENV"

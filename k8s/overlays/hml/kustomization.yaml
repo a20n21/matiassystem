@@ -1,0 +1,25 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: matiassystem-hml
+labels:
+  - pairs:
+      env: hml
+resources:
+  - namespace.yaml
+  - ../../base
+# Atualizado pelo workflow "promote" (dev → hml)
+images:
+  - name: matiassystem
+    newName: ghcr.io/a20n21/matiassystem
+    newTag: "5e91a77"
+replicas:
+  - name: matiassystem
+    count: 2
+patches:
+  - target:
+      kind: Ingress
+      name: matiassystem
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: hml.matiassystem.localhost

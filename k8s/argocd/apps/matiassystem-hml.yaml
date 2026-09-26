@@ -1,19 +1,17 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: matiassystem-prod
+  name: matiassystem-hml
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: git@github.com:a20n21/matiassystem.git
     targetRevision: main
-    path: k8s/overlays/prod
+    path: k8s/overlays/hml
   destination:
     server: https://kubernetes.default.svc
-    namespace: matiassystem-prod
-  # A aprovação acontece antes, no Git (Environment "production" + PR de promoção).
-  # Depois do merge, o Argo CD só aplica.
+    namespace: matiassystem-hml
   syncPolicy:
     automated:
       prune: true

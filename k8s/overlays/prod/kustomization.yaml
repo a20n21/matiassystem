@@ -8,6 +8,7 @@ resources:
   - namespace.yaml
   - ../../base
   - hpa.yaml
+# Atualizado pelo workflow "promote" (hml → prod)
 images:
   - name: matiassystem
     newTag: "1.0"

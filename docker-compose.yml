@@ -1,0 +1,12 @@
+# Desenvolvimento local: edite app/html/ e dê F5 em http://localhost:8081
+# (a porta 8080 já é usada pelo technova-platform)
+services:
+  site:
+    build: ./app
+    image: matiassystem:local
+    ports:
+      - "8081:8080"
+    volumes:
+      # HTML montado direto no container: mudanças aparecem sem rebuild.
+      # Mudou default.conf ou Dockerfile? Rode: docker compose up --build
+      - ./app/html:/usr/share/nginx/html:ro

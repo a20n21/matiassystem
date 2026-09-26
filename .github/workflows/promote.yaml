@@ -1,0 +1,73 @@
+name: promote
+
+# Botão "Run workflow" na aba Actions.
+# Copia a versão do ambiente anterior (dev → hml, hml → prod) e abre um PR.
+# Para prod, o job espera aprovação no Environment "production" antes de abrir o PR.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Ambiente de destino
+        type: choice
+        options: [hml, prod]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: promote-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'prod' && 'production' || 'homologacao' }}
+    env:
+      TARGET: ${{ inputs.target }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Push pela deploy key: dispara o pr-check na branch promote/**
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Ler versão do ambiente de origem
+        run: |
+          if [ "$TARGET" = "prod" ]; then SOURCE=hml; else SOURCE=dev; fi
+          f="k8s/overlays/$SOURCE/kustomization.yaml"
+          IMAGE=$(yq '.images[] | select(.name == "matiassystem") | .newName' "$f")
+          TAG=$(yq '.images[] | select(.name == "matiassystem") | .newTag' "$f")
+          echo "SOURCE=$SOURCE" >> "$GITHUB_ENV"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          echo "TAG=$TAG" >> "$GITHUB_ENV"
+          echo "Promovendo $IMAGE:$TAG de $SOURCE para $TARGET"
+
+      - name: Atualizar overlay de destino
+        run: |
+          f="k8s/overlays/$TARGET/kustomization.yaml"
+          yq -i '(.images[] | select(.name == "matiassystem")) |= (.newName = strenv(IMAGE) | .newTag = strenv(TAG))' "$f"
+          if git diff --quiet; then
+            echo "::notice::$TARGET já está na versão $TAG. Nada a promover."
+            echo "NOTHING=1" >> "$GITHUB_ENV"
+          fi
+          git diff
+
+      - name: Abrir PR de promoção
+        if: env.NOTHING != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          BRANCH="promote/$TARGET-$TAG"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git commit -am "promote($TARGET): matiassystem $TAG"
+          git push --force origin "$BRANCH"
+          gh pr create --base main --head "$BRANCH" \
+            --title "promote($TARGET): matiassystem $TAG" \
+            --body "Promoção de **$SOURCE → $TARGET**.
+
+          - Imagem: \`$IMAGE:$TAG\`
+          - Commit de origem: ${{ github.server_url }}/${{ github.repository }}/commit/$TAG
+          - Após o merge, o Argo CD aplica sozinho em \`matiassystem-$TARGET\`." \
+            || echo "::notice::PR para $BRANCH já existe"
