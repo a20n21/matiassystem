@@ -11,7 +11,7 @@ resources:
 images:
   - name: matiassystem
     newName: ghcr.io/a20n21/matiassystem
-    newTag: "760e716"
+    newTag: "bb447d2"
 replicas:
   - name: matiassystem
     count: 2
