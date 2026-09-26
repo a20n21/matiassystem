@@ -7,8 +7,11 @@ reportsController:
   enabled: true      # gera PolicyReports (visíveis no Freelens e via kubectl)
 cleanupController:
   enabled: false     # não usamos CleanupPolicies
+# Sem labels, os charts geram "labels: {}" nos CRDs; o Kubernetes descarta o mapa
+# vazio e o Argo CD mostra o app kyverno eternamente OutOfSync.
 crds:
-  # Sem isto, o chart gera "labels: {}" nos CRDs de policies.kyverno.io; o Kubernetes
-  # descarta o mapa vazio e o Argo CD mostra o app kyverno eternamente OutOfSync.
-  customLabels:
+  customLabels:                     # CRDs de kyverno.io e reports.kyverno.io
+    app.kubernetes.io/part-of: kyverno
+kyverno-api:
+  labels:                           # CRDs de policies.kyverno.io (subchart kyverno-api)
     app.kubernetes.io/part-of: kyverno
