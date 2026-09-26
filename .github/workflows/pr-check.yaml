@@ -1,13 +1,12 @@
 name: pr-check
 
 # Valida tudo antes do merge. Não publica nada.
-# Também roda em push para promote/**: os PRs de promoção são abertos pelo bot,
-# e PRs abertos com GITHUB_TOKEN não disparam o evento pull_request.
+# Roda em push em qualquer branch exceto main; o PR mostra os checks do commit.
+# Não usamos pull_request: em repo público, PRs abertos pelo bot (promoções)
+# exigem aprovação manual para rodar e a execução expira sem ninguém aprovar.
 on:
-  pull_request:
-    branches: [main]
   push:
-    branches: ["promote/**"]
+    branches-ignore: [main]
 
 permissions:
   contents: read
