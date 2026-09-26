@@ -35,7 +35,7 @@ jobs:
         with:
           scan-type: config
           scan-ref: rendered
-          trivyignores: .trivyignore
+          trivyignores: .trivyignore.yaml
           severity: LOW,MEDIUM,HIGH,CRITICAL
           exit-code: "1"
       # Mesmas políticas que o Kyverno aplica no cluster: o PR falha antes do deploy

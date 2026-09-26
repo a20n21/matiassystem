@@ -1,5 +1,0 @@
-# Exceções do Trivy. Cada linha precisa de justificativa.
-
-# KSV-0125 "untrusted registry": o Trivy só confia em alguns registries por padrão.
-# ghcr.io/a20n21 é o registry do próprio projeto, publicado pelo nosso CI.
-AVD-KSV-0125

@@ -1,0 +1,17 @@
+# Exceções do Trivy. Cada uma precisa de justificativa (statement).
+# "paths" limita a exceção aos manifestos renderizados daquele ambiente (rendered/<env>.yaml).
+misconfigurations:
+  - id: AVD-KSV-0125
+    statement: >-
+      "Untrusted registry": o Trivy só confia em alguns registries por padrão.
+      ghcr.io/a20n21 é o registry do projeto; ghcr.io/zaproxy é o do ZAP (DAST).
+
+  - id: AVD-KSV-0020
+    paths: ["hml.yaml"]
+    statement: >-
+      Job zap-baseline (DAST da hml) precisa rodar como UID 1000: os arquivos da imagem
+      do ZAP pertencem a esse usuário e com outro UID ele não grava o relatório.
+      dev e prod continuam exigindo UID > 10000 (mesmo Deployment base).
+  - id: AVD-KSV-0021
+    paths: ["hml.yaml"]
+    statement: Mesmo motivo do AVD-KSV-0020 (GID 1000 do ZAP).

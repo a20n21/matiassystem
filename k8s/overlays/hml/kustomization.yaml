@@ -7,6 +7,11 @@ labels:
 resources:
   - namespace.yaml
   - ../../base
+  - zap/zap-baseline-job.yaml   # DAST (ZAP) depois de cada sync
+configMapGenerator:
+  - name: zap-rules
+    files:
+      - zap/rules.tsv
 # Atualizado pelo workflow "promote" (dev → hml)
 images:
   - name: matiassystem

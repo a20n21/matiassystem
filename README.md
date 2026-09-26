@@ -27,6 +27,25 @@ O único passo humano depois do merge do código é a **aprovação de prod**. O
 
 Rollback: `git revert` do PR de promoção.
 
+## Segurança
+
+| Camada | Ferramenta | Onde | Bloqueia |
+|---|---|---|---|
+| Segredos no código | gitleaks | `pr-check` / secrets | PR |
+| CVEs da imagem | Trivy image | `pr-check` / build-scan | PR |
+| Configuração dos manifestos | Trivy config | `pr-check` / manifests | PR |
+| Políticas do cluster (teste offline) | Kyverno CLI | `pr-check` / manifests | PR |
+| Políticas do cluster (admissão) | Kyverno | cluster, namespaces `matiassystem-*` | `kubectl apply` / sync |
+| Ataque à aplicação rodando (DAST) | OWASP ZAP | Job PostSync na hml | Sync da hml |
+
+**Antes de aprovar prod:** no Argo CD, confira se o último sync de `matiassystem-hml` terminou com sucesso. Se o Job `zap-baseline` falhou, não aprove; os achados estão nos logs do Job:
+
+```powershell
+kubectl -n matiassystem-hml logs job/zap-baseline
+```
+
+Exceções ficam em `.trivyignore.yaml` (Trivy) e `k8s/overlays/hml/zap/rules.tsv` (ZAP), sempre com justificativa.
+
 ## Estrutura
 
 ```

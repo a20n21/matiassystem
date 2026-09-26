@@ -1,0 +1,11 @@
+# Regras do ZAP baseline (id, ação, nome). Formato separado por TAB.
+# FAIL: regressões que devem bloquear. IGNORE: exceções justificadas.
+# Não listadas continuam como WARN (aparecem no log sem falhar).
+10020	FAIL	(Anti-clickjacking header)
+10021	FAIL	(X-Content-Type-Options)
+10036	FAIL	(Server leaks version)
+10038	FAIL	(Content Security Policy)
+10063	FAIL	(Permissions Policy)
+90004	FAIL	(Site isolation / Spectre)
+10049	IGNORE	(Storable and cacheable: site estático deve ser cacheável)
+10116	IGNORE	(ZAP out of date: usamos a última versão fixa; atualizar via PR)
