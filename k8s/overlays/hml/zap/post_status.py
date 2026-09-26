@@ -9,9 +9,42 @@ import json
 import os
 import re
 import sys
+import urllib.error
 import urllib.request
 
 CONTEXT = "security/zap-hml"
+
+# O que costuma causar cada erro, por etapa (o token é fine-grained, só deste repositório)
+HINTS = {
+    "ler o commit": {
+        401: "token inválido ou expirado: gere outro e recrie o Secret zap-github-status",
+        403: "token sem acesso ao repositório ou sem 'Contents: Read-only'",
+        404: "token sem acesso ao repositório (Repository access) ou commit inexistente",
+        422: "a versão em /version.txt não é um commit deste repositório",
+    },
+    "gravar o status": {
+        401: "token inválido ou expirado: gere outro e recrie o Secret zap-github-status",
+        403: "token sem 'Commit statuses: Read and write' (só leitura não basta)",
+        404: "token sem acesso ao repositório (Repository access)",
+    },
+}
+
+
+def explain(step: str, error: Exception) -> str:
+    """Mensagem de erro com a etapa, o HTTP, a resposta do GitHub e a causa provável."""
+    if not isinstance(error, urllib.error.HTTPError):
+        return f"falha ao {step}: {error}"
+    try:
+        detail = json.load(error).get("message", "")
+    except Exception:
+        detail = ""
+    hint = HINTS.get(step, {}).get(error.code, "")
+    parts = [f"falha ao {step}: HTTP {error.code}"]
+    if detail:
+        parts.append(f"GitHub: {detail}")
+    if hint:
+        parts.append(f"provável causa: {hint}")
+    return " | ".join(parts)
 
 
 def main() -> None:
@@ -63,11 +96,17 @@ def main() -> None:
 
     try:
         sha = call("GET", f"{api}/commits/{version}")["sha"]
+    except Exception as e:
+        print(f"AVISO: {explain('ler o commit', e)}. Resultado não publicado.")
+        return
+
+    try:
         call("POST", f"{api}/statuses/{sha}",
              {"state": state, "context": CONTEXT, "description": description[:140]})
-        print(f"Status publicado: {CONTEXT}={state} no commit {sha[:7]} ({description})")
     except Exception as e:
-        print(f"AVISO: falha ao publicar status no GitHub ({e}).")
+        print(f"AVISO: {explain('gravar o status', e)}. Resultado não publicado.")
+        return
+    print(f"Status publicado: {CONTEXT}={state} no commit {sha[:7]} ({description})")
 
 
 if __name__ == "__main__":
