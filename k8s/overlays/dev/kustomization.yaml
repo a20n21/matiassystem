@@ -9,7 +9,7 @@ resources:
   - ../../base
 images:
   - name: matiassystem
-    newTag: "5f3e2fa"
+    newTag: "760e716"
     newName: ghcr.io/a20n21/matiassystem
 replicas:
   - name: matiassystem
