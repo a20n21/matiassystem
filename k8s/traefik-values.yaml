@@ -12,3 +12,19 @@ ports:
     hostPort: 443
 service:
   type: ClusterIP
+
+# hostPort 80/443 só cabe um pod por nó: derruba o antigo antes de subir o novo
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 1
+    maxSurge: 0
+
+# Sem LoadBalancer no kind, o Traefik não preenche o ADDRESS dos Ingress.
+# O Argo CD precisa desse campo para marcar o Ingress como Healthy.
+providers:
+  kubernetesIngress:
+    publishedService:
+      enabled: false
+additionalArguments:
+  - --providers.kubernetesingress.ingressendpoint.ip=127.0.0.1
