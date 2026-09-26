@@ -20,7 +20,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Roda antes da aprovação do Environment: se a promoção for inválida,
+  # ninguém chega a receber o pedido de aprovação.
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Bloquear prod com promoção de hml pendente
+        if: inputs.target == 'prod'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          pending=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open \
+            --json number,headRefName \
+            --jq '.[] | select(.headRefName | startswith("promote/hml-")) | "#\(.number) \(.headRefName)"')
+          if [ -n "$pending" ]; then
+            echo "::error::Há promoção para hml ainda não mergeada: $pending. Faça o merge (ou feche) antes de promover para prod; senão o prod receberia a versão antiga do hml."
+            exit 1
+          fi
+          echo "Nenhuma promoção de hml pendente."
+
   promote:
+    needs: guard
     runs-on: ubuntu-latest
     environment: ${{ inputs.target == 'prod' && 'production' || 'homologacao' }}
     env:
