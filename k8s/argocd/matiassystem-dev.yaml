@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: matiassystem-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:a20n21/matiassystem.git
+    targetRevision: main
+    path: k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: matiassystem-dev
+  # Dev: tudo que chegar no main é aplicado sozinho
+  syncPolicy:
+    automated:
+      prune: true     # remove do cluster o que sair do Git
+      selfHeal: true  # desfaz mudanças feitas direto no cluster

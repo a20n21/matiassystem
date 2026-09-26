@@ -1,0 +1,15 @@
+# Argo CD enxuto para o cluster local
+dex:
+  enabled: false          # sem SSO, login com usuário admin
+notifications:
+  enabled: false
+
+configs:
+  params:
+    server.insecure: true # HTTP simples; o Traefik recebe o tráfego em argocd.localhost
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hostname: argocd.localhost

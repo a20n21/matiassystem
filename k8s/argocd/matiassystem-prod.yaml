@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: matiassystem-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:a20n21/matiassystem.git
+    targetRevision: main
+    path: k8s/overlays/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: matiassystem-prod
+  # Prod: sem sync automático. O Argo CD mostra "OutOfSync" e você clica em Sync.
+  syncPolicy: {}
