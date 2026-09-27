@@ -1,3 +1,4 @@
+import { registerMetrics } from './metrics.js';
 import { existsSync } from 'node:fs';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
@@ -24,6 +25,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   registerSecurity(app);
+  registerMetrics(app);
   await app.register(cookie);
   await app.register(rateLimit, { global: false });
 
