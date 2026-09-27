@@ -7,9 +7,10 @@
 #   .\scripts\criar-segredos.ps1                       # dev, hml e prod
 #   .\scripts\criar-segredos.ps1 -Ambientes prod       # só um ambiente (ex.: trocar a senha do prod)
 #   .\scripts\criar-segredos.ps1 -SomenteBanco         # só cria o que faltar do banco (não pede senha)
+#   .\scripts\criar-segredos.ps1 -Usuario outro-nome   # login com outro nome de usuário (padrão: user)
 param(
     [string[]]$Ambientes = @('dev', 'hml', 'prod'),
-    [string]$Usuario = 'matias',
+    [string]$Usuario = 'user',
     [switch]$SomenteBanco
 )
 $ErrorActionPreference = 'Stop'
