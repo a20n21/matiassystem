@@ -13,6 +13,4 @@ images:
   - name: matiassystem
     newTag: "9ec3e77"
     newName: ghcr.io/a20n21/matiassystem
-replicas:
-  - name: matiassystem
-    count: 3
+
