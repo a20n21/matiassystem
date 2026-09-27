@@ -1,0 +1,5 @@
+# Instalados/compilados dentro da imagem, nunca copiados do host
+**/node_modules
+**/dist
+**/*.log
+**/.vite

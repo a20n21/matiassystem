@@ -16,10 +16,12 @@ spec:
       matchLabels:
         matiassystem.io/policies: enforced
   validations:
-    - message: "Imagem fora dos registries permitidos (ghcr.io/a20n21/, ghcr.io/zaproxy/)."
+    # Liberadas: o app (nosso GHCR), o ZAP (DAST da hml) e só a imagem oficial do Postgres
+    - message: "Imagem fora dos registries permitidos (ghcr.io/a20n21/, ghcr.io/zaproxy/, docker.io/library/postgres)."
       expression: >-
         object.spec.containers.all(c, c.image.startsWith('ghcr.io/a20n21/')
-          || c.image.startsWith('ghcr.io/zaproxy/'))
+          || c.image.startsWith('ghcr.io/zaproxy/')
+          || c.image.startsWith('docker.io/library/postgres:'))
     - message: "Imagem precisa de tag explícita e diferente de :latest."
       expression: >-
         object.spec.containers.all(c, c.image.split('/')[size(c.image.split('/')) - 1].contains(':')

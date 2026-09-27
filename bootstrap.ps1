@@ -47,7 +47,10 @@ if (-not (kubectl -n $AppNamespaces[0] get secret ghcr-pull --ignore-not-found))
     Remove-Variable t, p
 }
 
-# 5. Token para o ZAP da hml publicar o resultado no GitHub (commit status)
+# 5. Banco e login do app em cada ambiente (senha do Postgres aleatória + hash da sua senha)
+& (Join-Path $PSScriptRoot 'scripts\criar-segredos.ps1')
+
+# 6. Token para o ZAP da hml publicar o resultado no GitHub (commit status)
 if (-not (kubectl -n matiassystem-hml get secret zap-github-status --ignore-not-found)) {
     Write-Host "`nToken fine-grained do GitHub: repositório matiassystem, 'Commit statuses: Read and write' e 'Contents: Read-only'." -ForegroundColor Yellow
     $t = Read-Host "Token do ZAP (Enter para pular: o prod não poderá ser promovido)" -AsSecureString
@@ -58,7 +61,7 @@ if (-not (kubectl -n matiassystem-hml get secret zap-github-status --ignore-not-
     Remove-Variable t, p
 }
 
-# 6. App of apps: a partir daqui o Argo CD assume
+# 7. App of apps: a partir daqui o Argo CD assume
 kubectl apply -f k8s/argocd/root.yaml
 Write-Host "`nPronto. Acompanhe em http://argocd.localhost (usuário admin). Senha:" -ForegroundColor Green
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" |

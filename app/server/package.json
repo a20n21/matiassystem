@@ -1,0 +1,26 @@
+{
+  "name": "matiassystem-server",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --legacy-watch --watch src --watch migrations --ext ts,sql --exec tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "hash-password": "tsx src/hash-password.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.2",
+    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/static": "^10.1.5",
+    "fastify": "^5.12.5",
+    "pg": "^8.23.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "@types/pg": "^8.23.1",
+    "nodemon": "^3.1.14",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

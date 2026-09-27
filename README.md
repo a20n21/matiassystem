@@ -2,6 +2,16 @@
 
 Portal de estudos rodando num Kubernetes local (kind), com GitOps via Argo CD.
 
+App pessoal com login: trilhas, estudos (cursos) com checklist de aulas assistidas,
+anotações em Markdown, cronômetro de sessões de estudo e roadmap.
+
+| Parte | Tecnologia |
+|---|---|
+| Frontend | React + TypeScript (Vite) — `app/web` |
+| Backend | Node.js + Fastify + TypeScript — `app/server` |
+| Banco | PostgreSQL 17 (um por ambiente, StatefulSet com volume) |
+| Imagem | Multistage: build do front e do back, runtime Node sem root e sem npm |
+
 ## Ambientes
 
 | Ambiente | Endereço | Atualização |
@@ -17,7 +27,9 @@ Portal de estudos rodando num Kubernetes local (kind), com GitOps via Argo CD.
 branch → docker compose (local) → PR (pr-check) → merge → dev → hml → ⏸ aprovação → prod
 ```
 
-1. **Local:** `git checkout -b minha-mudanca` e `docker compose up -d`. Edite `app/html/` e veja em http://localhost:8081 (F5, sem rebuild).
+1. **Local:** `git checkout -b minha-mudanca` e `docker compose up -d`. Abra http://localhost:8081
+   (usuário `matias`, senha `matias123`, só local). Mudanças em `app/web/src` aparecem sozinhas;
+   em `app/server/src` a API reinicia sozinha. Migrações novas: `app/server/migrations/NNN_nome.sql`.
 2. **PR:** push da branch e abra um PR. O `pr-check` roda Kustomize, build + Trivy e gitleaks.
 3. **Dev:** o merge no `main` gera a imagem `ghcr.io/a20n21/matiassystem:<commit>` e o Argo CD atualiza o dev.
 4. **Homologação:** automática. O bot abre o PR de promoção, espera o `pr-check` e faz o merge.
@@ -26,6 +38,21 @@ branch → docker compose (local) → PR (pr-check) → merge → dev → hml �
 O único passo humano depois do merge do código é a **aprovação de prod**. O `promote` também pode ser disparado à mão (Actions → promote → Run workflow).
 
 Rollback: `git revert` do PR de promoção.
+
+## Senhas e dados
+
+Cada ambiente tem os próprios Secrets (fora do Git), criados por:
+
+```powershell
+.\scripts\criar-segredos.ps1                   # dev, hml e prod
+.\scripts\criar-segredos.ps1 -Ambientes prod   # trocar a senha de login do prod
+```
+
+- `matiassystem-db`: senha do Postgres, aleatória, criada uma única vez (nunca sobrescrita).
+- `matiassystem-app`: usuário e hash scrypt da senha de login (a senha em si não é guardada).
+
+O banco fica num volume do cluster local: **apagar o cluster apaga os dados**.
+Use **Configurações → Exportar backup** de vez em quando.
 
 ## Segurança
 
@@ -57,7 +84,9 @@ Exceções ficam em `.trivyignore.yaml` (Trivy) e `k8s/overlays/hml/zap/rules.ts
 ## Estrutura
 
 ```
-app/                   site (nginx) — html/ é o conteúdo
+app/web/               frontend React (Vite)
+app/server/            API Fastify + migrações SQL (migrations/)
+scripts/               criar-segredos.ps1 (senhas por ambiente)
 k8s/base/              Deployment, Service, Ingress
 k8s/overlays/          dev, hml, prod (Kustomize)
 k8s/argocd/root.yaml   app of apps (único manifesto aplicado à mão)
