@@ -9,6 +9,7 @@ function required(name: string): string {
 export const config = {
   host: process.env.HOST ?? '0.0.0.0',
   port: Number(process.env.PORT ?? 8080),
+  metricsPort: Number(process.env.METRICS_PORT ?? 9091),
   isProd: process.env.NODE_ENV === 'production',
   version: process.env.VERSION ?? 'local',
   // Único usuário do app. A senha nunca fica em texto: só o hash (npm run hash-password).

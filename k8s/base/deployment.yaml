@@ -36,7 +36,10 @@ spec:
           image: matiassystem:1.0
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+            - name: metrics
+              containerPort: 9091
           env:
             - name: PGHOST
               value: postgres
@@ -60,16 +63,16 @@ spec:
           # Na subida o app espera o banco e aplica as migrações: até ~2 min antes de desistir
           startupProbe:
             httpGet: { path: /healthz, port: 8080 }
-            periodSeconds: 5
+            periodSeconds: 60
             failureThreshold: 24
           # Só recebe tráfego com o banco respondendo
           readinessProbe:
             httpGet: { path: /readyz, port: 8080 }
-            periodSeconds: 10
+            periodSeconds: 60
           # Reinicia só se o processo travar (não depende do banco)
           livenessProbe:
             httpGet: { path: /healthz, port: 8080 }
-            periodSeconds: 20
+            periodSeconds: 60
           resources:
             requests:
               cpu: 50m
