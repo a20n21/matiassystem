@@ -1,4 +1,4 @@
-# Recria o ambiente do zero: cluster kind + Argo CD + credenciais + app of apps.
+﻿# Recria o ambiente do zero: cluster kind + Argo CD + credenciais + app of apps.
 # Todo o resto (Traefik, metrics-server, matiassystem dev/prod) o Argo CD instala a partir do Git.
 # Uso (PowerShell, na raiz do projeto): .\bootstrap.ps1
 $ErrorActionPreference = 'Stop'
