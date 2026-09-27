@@ -1,0 +1,33 @@
+alertmanager:
+  enabled: false            
+
+
+kubeEtcd: { enabled: false }
+kubeControllerManager: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeProxy: { enabled: false }
+
+grafana:
+  admin:
+    existingSecret: grafana-admin     
+    userKey: admin-user
+    passwordKey: admin-password
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [grafana.localhost]
+    path: /
+
+prometheus:
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    hosts: [prometheus.localhost]
+    paths: [/]
+  prometheusSpec:
+    retention: 2d                     
+    resources:
+      requests: { cpu: 100m, memory: 400Mi }
+      limits: { memory: 1Gi }
+    
+    serviceMonitorSelectorNilUsesHelmValues: false
