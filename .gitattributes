@@ -1,0 +1,5 @@
+# Scripts executados em Linux (containers, Jobs) precisam de quebra de linha LF,
+# mesmo quando editados no Windows (senão: "/bin/sh: ... not found", "Bad fd number")
+*.sh   text eol=lf
+*.py   text eol=lf
+*.tsv  text eol=lf

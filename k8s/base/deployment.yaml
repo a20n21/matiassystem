@@ -14,9 +14,9 @@ spec:
       labels:
         app: matiassystem
     spec:
-      # O site não usa a API do Kubernetes, então não precisa do token da service account
+      # O app não usa a API do Kubernetes, então não precisa do token da service account
       automountServiceAccountToken: false
-      # Credencial do GHCR (imagem privada). Criada à mão em cada namespace, fora do Git.
+      # Credencial do GHCR. Criada à mão em cada namespace, fora do Git.
       imagePullSecrets:
         - name: ghcr-pull
       securityContext:
@@ -26,7 +26,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       volumes:
-        # Única área gravável: o nginx grava pid e arquivos temporários em /tmp
+        # Única área gravável (o Node não grava nada no disco, mas bibliotecas podem usar /tmp)
         - name: tmp
           emptyDir:
             sizeLimit: 64Mi
@@ -35,27 +35,49 @@ spec:
           # Nome/tag substituídos por cada overlay (images: no kustomization.yaml)
           image: matiassystem:1.0
           imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PGHOST
+              value: postgres
+            - name: PGUSER
+              valueFrom: { secretKeyRef: { name: matiassystem-db, key: POSTGRES_USER } }
+            - name: PGPASSWORD
+              valueFrom: { secretKeyRef: { name: matiassystem-db, key: POSTGRES_PASSWORD } }
+            - name: PGDATABASE
+              valueFrom: { secretKeyRef: { name: matiassystem-db, key: POSTGRES_DB } }
+            # Login do app: usuário e hash scrypt da senha (scripts/criar-segredos.ps1)
+            - name: APP_USER
+              valueFrom: { secretKeyRef: { name: matiassystem-app, key: APP_USER } }
+            - name: APP_PASSWORD_HASH
+              valueFrom: { secretKeyRef: { name: matiassystem-app, key: APP_PASSWORD_HASH } }
+            # Acesso local por http://*.localhost: cookie sem a flag Secure
+            - name: COOKIE_SECURE
+              value: "false"
           volumeMounts:
             - name: tmp
               mountPath: /tmp
-          ports:
-            - containerPort: 8080
+          # Na subida o app espera o banco e aplica as migrações: até ~2 min antes de desistir
+          startupProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            periodSeconds: 5
+            failureThreshold: 24
+          # Só recebe tráfego com o banco respondendo
           readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8080
+            httpGet: { path: /readyz, port: 8080 }
+            periodSeconds: 10
+          # Reinicia só se o processo travar (não depende do banco)
           livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 8080
+            httpGet: { path: /healthz, port: 8080 }
+            periodSeconds: 20
           resources:
             requests:
-              cpu: 10m
-              memory: 16Mi
+              cpu: 50m
+              memory: 96Mi
               ephemeral-storage: 32Mi
             limits:
-              cpu: 100m
-              memory: 64Mi
+              cpu: 500m
+              memory: 256Mi
               ephemeral-storage: 128Mi
           securityContext:
             allowPrivilegeEscalation: false

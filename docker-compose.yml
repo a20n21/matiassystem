@@ -1,12 +1,60 @@
-# Desenvolvimento local: edite app/html/ e dê F5 em http://localhost:8081
-# (a porta 8080 já é usada pelo technova-platform)
+# Desenvolvimento local: http://localhost:8081  (usuário: matias / senha: matias123)
+# Edite app/web/src ou app/server/src: o navegador e a API recarregam sozinhos.
+#
+#   docker compose up -d          sobe tudo
+#   docker compose logs -f server acompanha a API
+#   docker compose down           para (os dados ficam no volume pgdata)
+#   docker compose down -v        para e APAGA os dados locais
 services:
-  site:
-    build: ./app
-    image: matiassystem:local
-    ports:
-      - "8081:8080"
+  db:
+    image: docker.io/library/postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: matias
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: matiassystem
     volumes:
-      # HTML montado direto no container: mudanças aparecem sem rebuild.
-      # Mudou default.conf ou Dockerfile? Rode: docker compose up --build
-      - ./app/html:/usr/share/nginx/html:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U matias -d matiassystem"]
+      interval: 3s
+      retries: 20
+
+  server:
+    image: node:24.21.0-alpine
+    working_dir: /server
+    command: sh -c "npm ci --no-audit --no-fund --loglevel=error && npm run dev"
+    environment:
+      PORT: "3000"
+      PGHOST: db
+      PGUSER: matias
+      PGPASSWORD: dev
+      PGDATABASE: matiassystem
+      APP_USER: matias
+      # hash de "matias123" (só para uso local). "$$" é o "$" escapado do compose.
+      APP_PASSWORD_HASH: "scrypt$$32768$$8$$1$$wGy525OepIU57K46oxxQEw==$$OhHf3g7ZaFq05aYfwblWZueQWdm3BuimU/NzwMa2EOp26ELedpXTCGMSlx9q+pTDjElNTZLRY0VSCDSkGbdagw=="
+      COOKIE_SECURE: "false"
+    volumes:
+      - ./app/server:/server
+      - server_node_modules:/server/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    image: node:24.21.0-alpine
+    working_dir: /web
+    command: sh -c "npm ci --no-audit --no-fund --loglevel=error && npm run dev"
+    environment:
+      API_URL: http://server:3000
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./app/web:/web
+      - web_node_modules:/web/node_modules
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
+  server_node_modules:
+  web_node_modules:
