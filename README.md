@@ -21,14 +21,16 @@ entre o commit e a produção.
 6. [Pré-requisitos](#6-pré-requisitos)
 7. [Subir o ambiente do zero](#7-subir-o-ambiente-do-zero)
 8. [Desenvolvimento local](#8-desenvolvimento-local)
-9. [Ambientes](#9-ambientes)
-10. [Esteira de entrega (CI/CD + GitOps)](#10-esteira-de-entrega-cicd--gitops)
-11. [Segurança](#11-segurança)
-12. [Senhas, segredos e dados](#12-senhas-segredos-e-dados)
-13. [Operação do dia a dia](#13-operação-do-dia-a-dia)
-14. [Solução de problemas](#14-solução-de-problemas)
-15. [Decisões de projeto](#15-decisões-de-projeto)
-16. [Roadmap](#16-roadmap)
+9. [Por que dev, hml e prod?](#9-por-que-dev-hml-e-prod)
+10. [Ambientes deste projeto](#10-ambientes-deste-projeto)
+11. [Esteira de entrega (CI/CD + GitOps)](#11-esteira-de-entrega-cicd--gitops)
+12. [Segurança](#12-segurança)
+13. [Senhas, segredos e dados](#13-senhas-segredos-e-dados)
+14. [Exemplos do dia a dia](#14-exemplos-do-dia-a-dia)
+15. [Comandos de operação](#15-comandos-de-operação)
+16. [Solução de problemas](#16-solução-de-problemas)
+17. [Decisões de projeto](#17-decisões-de-projeto)
+18. [Roadmap](#18-roadmap)
 
 ---
 
@@ -45,7 +47,8 @@ flowchart LR
 ```
 
 Tudo que roda no cluster está descrito no Git. Ninguém aplica mudanças à mão: o **Argo CD**
-lê o repositório e deixa o cluster igual ao que está no `main`.
+lê o repositório e deixa o cluster igual ao que está no `main`. Se alguém alterar algo direto
+no cluster, o Argo CD desfaz (*self-heal*).
 
 ---
 
@@ -53,9 +56,9 @@ lê o repositório e deixa o cluster igual ao que está no `main`.
 
 | Tela | O que faz |
 |---|---|
-| **Login** | Usuário e senha únicos. Bloqueia após 5 tentativas por minuto. |
+| **Login** | Usuário e senha únicos por ambiente. Bloqueia após 5 tentativas por minuto. |
 | **Início** | Estudando agora, concluídos, planejados, tempo estudado (hoje, semana, total, gráfico de 7 dias), progresso por trilha, roadmap em andamento. |
-| **Meus estudos** | Lista com busca (título, anotações e tags), filtros por trilha e status. |
+| **Meus estudos** | Lista com busca (título, anotações e tags) e filtros por trilha e status. |
 | **Estudo** | Status, progresso, **checklist de aulas**, **cronômetro**, histórico de sessões e **anotações em Markdown** com pré-visualização (Ctrl+S salva). |
 | **Trilhas** | Áreas de estudo (AWS, Kubernetes...) com cor, progresso e a lista de estudos de cada uma. |
 | **Roadmap** | Quadro com as colunas Próximo, Em andamento e Feito. |
@@ -210,7 +213,7 @@ git checkout -b feat/minha-mudanca
 docker compose up -d
 ```
 
-Abra **http://localhost:8081**: usuário `matias`, senha `matias123` (válidos só no compose).
+Abra **http://localhost:8081**: usuário `user`, senha `senha123` (válidos só no compose).
 
 | Serviço | O que roda |
 |---|---|
@@ -232,22 +235,55 @@ Abra **http://localhost:8081**: usuário `matias`, senha `matias123` (válidos s
 
 ---
 
-## 9. Ambientes
+## 9. Por que dev, hml e prod?
 
-| Ambiente | Endereço | Réplicas | Atualização |
+Os três ambientes existem para **pegar problemas o mais cedo e o mais barato possível**, antes
+que cheguem a quem usa o sistema de verdade. Cada ambiente funciona como um filtro: quanto mais
+perto do prod, mais parecido com o real e mais cuidado ele exige.
+
+| | **dev** (desenvolvimento) | **hml** (homologação / staging) | **prod** (produção) |
 |---|---|---|---|
-| Local | http://localhost:8081 | 1 | A cada arquivo salvo |
-| dev | http://dev.matiassystem.localhost | 1 | Automática a cada merge no `main` |
-| hml | http://hml.matiassystem.localhost | 2 | Automática depois do dev, com ZAP |
-| prod | http://matiassystem.localhost | 3 a 10 (HPA) | Depois do hml, **com aprovação** |
-| Argo CD | http://argocd.localhost | — | — |
+| **Pergunta que responde** | "Funciona?" | "Está certo, seguro e pode ir para o usuário?" | É o real |
+| **Quem usa** | Quem desenvolve | QA, área de negócio, segurança | Usuários finais |
+| **Dados** | De teste, descartáveis | Parecidos com os reais (anonimizados) | Reais |
+| **Estabilidade** | Pode quebrar | Deve ser estável | Não pode cair |
+| **Frequência de mudança** | Várias vezes por dia | Algumas vezes por semana | Controlada, com aprovação |
+| **Se der problema** | Ninguém percebe | Atrasa a entrega | Usuário afetado |
 
-Cada ambiente tem **namespace, banco, senha de login e dados próprios**. A mesma imagem
-(mesmo hash de commit) passa pelos três: o que foi testado na hml é exatamente o que vai para o prod.
+**Exemplo:** uma mudança no cálculo do progresso das trilhas.
+
+- No **dev**, a pessoa desenvolvendo confere que a tela abre e o número aparece.
+- Na **hml**, alguém testa com um curso de 60 aulas e percebe que o arredondamento está errado;
+  o ZAP confirma que nenhum header de segurança sumiu. **O bug é pego aqui, sem afetar ninguém.**
+- No **prod**, depois da correção e da aprovação, a mudança chega aos dados reais.
+
+**Por que não testar direto no prod?** Porque um erro atingiria todos os dados reais de uma vez,
+porque não dá para testar coisas destrutivas (apagar, importar backup) com dados de verdade e
+porque leis como a **LGPD** restringem quem pode mexer em dados reais.
+
+**Neste projeto:** os três ambientes rodam no mesmo cluster, em namespaces separados, cada um com
+**seu próprio banco e sua própria senha**. Em empresas, o prod costuma ficar num **cluster
+separado** (às vezes em outra conta de nuvem), para que um erro no dev nunca derrube o prod.
+O que é igual aqui e no mercado: **a mesma imagem**, byte a byte, passa por dev, hml e prod.
+Promover não é "recompilar para outro ambiente", é mudar qual versão cada ambiente usa.
 
 ---
 
-## 10. Esteira de entrega (CI/CD + GitOps)
+## 10. Ambientes deste projeto
+
+| Ambiente | Endereço | Réplicas | Atualização | Para que uso |
+|---|---|---|---|---|
+| Local | http://localhost:8081 | 1 | A cada arquivo salvo | Desenvolver e ver a mudança na hora |
+| dev | http://dev.matiassystem.localhost | 1 | Automática a cada merge no `main` | Confirmar que a versão sobe no Kubernetes |
+| hml | http://hml.matiassystem.localhost | 2 | Automática depois do dev, com ZAP | Validar antes do prod, com dados de teste |
+| prod | http://matiassystem.localhost | 3 a 10 (HPA) | Depois do hml, **com aprovação** | Os estudos de verdade |
+| Argo CD | http://argocd.localhost | — | — | Ver o estado de tudo |
+
+Cada ambiente tem **namespace, banco, senha de login e dados próprios**.
+
+---
+
+## 11. Esteira de entrega (CI/CD + GitOps)
 
 ```mermaid
 sequenceDiagram
@@ -287,9 +323,12 @@ sequenceDiagram
 
 **Tempo típico entre o merge e o prod:** 10 a 15 minutos (o Argo CD consulta o Git a cada ~3 min e o ZAP leva ~4 min).
 
+> ⚠️ Mudanças em `k8s/base/` valem para os três ambientes **ao mesmo tempo**, sem passar pela
+> promoção (só a imagem é promovida). Elas ainda passam pelos checks do PR e pelo Kyverno.
+
 ---
 
-## 11. Segurança
+## 12. Segurança
 
 ### Camadas
 
@@ -338,26 +377,30 @@ da mesma rede conseguem acessá-las. O app exige login, mas **em redes públicas
 
 ---
 
-## 12. Senhas, segredos e dados
+## 13. Senhas, segredos e dados
 
 Nenhuma senha está no Git. Por ambiente:
 
 | Secret | Conteúdo | Criado por |
 |---|---|---|
 | `matiassystem-db` | Usuário, banco e senha do Postgres (aleatória, 32 caracteres) | `criar-segredos.ps1`, **uma única vez** |
-| `matiassystem-app` | Usuário `matias` e hash da sua senha de login | `criar-segredos.ps1` |
+| `matiassystem-app` | Nome de usuário do login e hash da senha | `criar-segredos.ps1` |
 | `ghcr-pull` | Token de leitura do GHCR | `bootstrap.ps1` |
 | `zap-github-status` (hml) | Token que publica o resultado do ZAP | `bootstrap.ps1` |
 | `repo-matiassystem` (argocd) | Deploy key de leitura do repositório | `bootstrap.ps1` |
 
 ```powershell
-.\scripts\criar-segredos.ps1                   # dev, hml e prod
-.\scripts\criar-segredos.ps1 -Ambientes prod   # trocar a senha de login do prod
-.\scripts\criar-segredos.ps1 -SomenteBanco     # só cria o que faltar do banco
+.\scripts\criar-segredos.ps1                         # dev, hml e prod (usuário padrão: user)
+.\scripts\criar-segredos.ps1 -Ambientes prod         # trocar a senha de login do prod
+.\scripts\criar-segredos.ps1 -Usuario outro-nome     # usar outro nome de usuário
+.\scripts\criar-segredos.ps1 -SomenteBanco           # só cria o que faltar do banco
 ```
 
 > A senha do Postgres **nunca** é sobrescrita: ele só a lê na primeira inicialização do banco.
 > Trocá-la depois faria o app perder o acesso.
+
+> Ao rodar o script de novo, o nome de usuário do login passa a ser o do parâmetro `-Usuario`
+> (padrão `user`). Para manter um nome já em uso, informe-o: `-Usuario nome-atual`.
 
 ### Backup
 
@@ -367,7 +410,118 @@ sessões e roadmap. **Importar** substitui todos os dados do ambiente, numa úni
 
 ---
 
-## 13. Operação do dia a dia
+## 14. Exemplos do dia a dia
+
+### 🎓 Estudar uma aula
+
+1. Abra http://matiassystem.localhost e entre com o seu usuário.
+2. **Meus estudos** → *Preparação para o SAA-C03*.
+3. Na aula *VPC e subnets*, clique em **▶**: o cronômetro aparece no menu e no título da aba.
+4. Assista à aula. Em **Anotações → Editar**, registre comandos e conceitos em Markdown (Ctrl+S).
+5. Clique em **Parar** no menu → *"Aula assistida?"* → **Sim, marcar**.
+6. O progresso do curso e o da trilha AWS sobem sozinhos; o tempo entra em "Hoje".
+
+### 📚 Cadastrar um curso novo
+
+1. **Trilhas** → *Kubernetes* → no fim da lista, digite *CKA – Certified Kubernetes Administrator* e Enter.
+2. Abra o curso → **Aulas → Adicionar várias** → cole o índice do curso (uma aula por linha;
+   marcadores como `-` e `1.` são removidos).
+3. Pronto: o curso aparece em 0%, com o checklist completo.
+
+### 🛠️ Mudar algo no app (fluxo completo)
+
+Exemplo: trocar o texto do botão "Novo estudo" para "Novo curso".
+
+```powershell
+git checkout main
+git pull
+git checkout -b feat/texto-novo-curso
+docker compose up -d
+# edite app/web/src/pages/Estudos.tsx e veja em http://localhost:8081
+git add app/web
+git commit -m "feat: botão 'Novo curso'"
+git push -u origin feat/texto-novo-curso
+```
+
+1. Abra o PR pelo link do `git push` e espere os 3 checks ficarem verdes.
+2. Faça o **merge**. Em ~2 min a mudança está no **dev**.
+3. O bot promove para a **hml** e o ZAP roda (~5 min).
+4. Em **Actions → promote (Waiting) → Review deployments → Approve and deploy**, aprove o prod.
+5. Em ~3 min a mudança está em http://matiassystem.localhost.
+6. Limpe: `git checkout main`, `git pull`, `git branch -d feat/texto-novo-curso`.
+
+### 🗄️ Adicionar um campo no banco
+
+Exemplo: guardar a plataforma do curso (Udemy, Alura...).
+
+1. Crie `app/server/migrations/006_plataforma_do_estudo.sql`:
+   ```sql
+   ALTER TABLE estudos ADD COLUMN plataforma text NOT NULL DEFAULT '';
+   ```
+2. Ajuste a rota em `app/server/src/routes/estudos.ts` e o formulário em `app/web`.
+3. No compose, a API reinicia e aplica a migração sozinha (veja `docker compose logs server`).
+4. Siga o fluxo de PR: cada ambiente aplica a migração quando recebe a versão nova.
+
+### 🔴 PR bloqueado por vulnerabilidade
+
+O check **build-scan** fica vermelho: o Trivy achou uma CVE HIGH com correção disponível.
+
+1. Clique em **Details** no check e procure a tabela com a biblioteca e a *Fixed Version*.
+2. Se for do sistema (Alpine), o `apk upgrade` do Dockerfile costuma resolver num novo build;
+   se for de dependência npm, atualize com
+   `docker run --rm -v "${PWD}/app/server:/w" -w /w node:24.21.0-alpine npm update <pacote>`.
+3. Faça push na mesma branch: os checks rodam de novo.
+
+### 🛡️ ZAP reprovou a hml
+
+O `promote (prod)` falha em **"Exigir ZAP verde"** e ninguém recebe pedido de aprovação.
+
+```powershell
+kubectl -n matiassystem-hml logs job/zap-baseline | Select-String "FAIL-NEW"
+```
+
+A saída mostra a regra (ex.: *Content Security Policy Header Not Set*). Corrija
+(normalmente em `app/server/src/security.ts`) e abra um novo PR. A versão com problema nunca chega ao prod.
+
+### ⏪ Voltar a versão do prod (rollback)
+
+Uma versão chegou ao prod com um bug.
+
+1. No GitHub, abra o último PR `promote(prod): matiassystem <commit>`.
+2. Clique em **Revert** → crie o PR de revert → merge.
+3. O Argo CD volta o prod para a versão anterior em ~3 min. Depois corrija o bug com calma.
+
+### 🔑 Trocar a senha de login do prod
+
+```powershell
+.\scripts\criar-segredos.ps1 -Ambientes prod -Usuario nome-atual
+```
+
+Digite a nova senha (8+ caracteres). Os pods do app são recriados e a senha nova vale na hora.
+
+### 💾 Backup semanal
+
+Toda sexta: **Configurações → Exportar backup** no prod e guarde o arquivo
+(OneDrive, Google Drive). Para restaurar: **Importar backup** e escolher o arquivo.
+
+### 🔄 O PC reiniciou
+
+1. Abra o **Docker Desktop**: os nós do kind voltam sozinhos e o Argo CD reconcilia tudo.
+2. Confira: `kubectl -n argocd get applications` (tudo *Synced / Healthy* em 1 a 2 min).
+3. Para desenvolver: `docker compose up -d`.
+
+### 🧹 Recriar o cluster do zero
+
+```powershell
+# 1. Exporte o backup do prod antes!
+kind delete cluster --name matiassystem
+.\bootstrap.ps1
+# 2. Entre no prod e importe o backup
+```
+
+---
+
+## 15. Comandos de operação
 
 | Tarefa | Comando |
 |---|---|
@@ -384,9 +538,12 @@ sessões e roadmap. **Importar** substitui todos os dados do ambiente, numa úni
 Antes de qualquer comando que altere algo, confira o cluster ativo:
 `kubectl config current-context` deve mostrar `kind-matiassystem`.
 
+> **PowerShell:** escreva entre aspas simples tudo que tiver chaves, como `'stash@{0}'`.
+> Sem aspas, o PowerShell interpreta `{0}` e o comando quebra.
+
 ---
 
-## 14. Solução de problemas
+## 16. Solução de problemas
 
 | Sintoma | Causa provável | O que fazer |
 |---|---|---|
@@ -394,19 +551,21 @@ Antes de qualquer comando que altere algo, confira o cluster ativo:
 | Pod do app em `CreateContainerConfigError` | Faltam os Secrets do ambiente | `.\scripts\criar-segredos.ps1` |
 | Pod do app reiniciando na subida | Banco ainda subindo (o app espera até ~2 min) | Veja `logs statefulset/postgres` |
 | Login recusado com a senha certa | Hash gerado com caractere invisível (BOM) | Recrie com `criar-segredos.ps1 -Ambientes <amb>` |
+| Compose: "conexão fechada" em `localhost:8081/api` | A API foi recriada e o Vite ficou preso à anterior | `docker compose restart web` |
 | `promote(prod)` falha em "Exigir ZAP verde" | ZAP reprovou, ou não publicou (token ausente/sem permissão) | Veja os logs do Job do ZAP; o `AVISO` indica a causa |
 | Job do ZAP: `not found` / `Bad fd number` | Script com quebra de linha do Windows (CRLF) | O `.gitattributes` evita; confirme que o arquivo está em LF |
-| Check `build-scan` vermelho | CVE nova com correção disponível | Atualize a imagem base ou o pacote; rode o Trivy localmente |
+| Check `build-scan` vermelho | CVE nova com correção disponível | Veja "PR bloqueado por vulnerabilidade" na seção 14 |
 | Argo CD fica *OutOfSync* sem motivo aparente | Diferença de normalização (ex.: mapas vazios) | Veja a diferença exata na API do Argo CD (`managed-resources`) |
+| `git checkout main` recusado por "local changes" | Arquivo alterado que seria sobrescrito | `git stash`, troque de branch, `git stash pop` |
 | `kubectl` fala com outro cluster | Contexto errado (ex.: um AKS no WSL) | `kubectl config use-context kind-matiassystem` |
 
 ---
 
-## 15. Decisões de projeto
+## 17. Decisões de projeto
 
 - **Ambientes como pastas (overlays), não como branches.** Promover é trocar uma tag num PR:
   sem merges entre branches divergentes, e a mesma imagem passa por todos os ambientes.
-- **GitHub Flow**: só o `main` e branches curtas. Nada de `develop`.
+- **GitHub Flow**: só o `main` e branches curtas (`feat/`, `fix/`, `docs/`...). Nada de `develop`.
 - **App of apps**: a plataforma inteira é recriável a partir do Git.
 - **Encadeamento por `workflow_dispatch`**: ações feitas com `GITHUB_TOKEN` não disparam outros
   workflows; `workflow_dispatch` é a exceção.
@@ -418,7 +577,7 @@ Antes de qualquer comando que altere algo, confira o cluster ativo:
 
 ---
 
-## 16. Roadmap
+## 18. Roadmap
 
 - [ ] Observabilidade: Prometheus e Grafana (gráficos no Freelens)
 - [ ] Portas do cluster e do compose restritas a `127.0.0.1`

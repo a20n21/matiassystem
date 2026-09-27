@@ -1,4 +1,4 @@
-# Desenvolvimento local: http://localhost:8081  (usuário: matias / senha: matias123)
+# Desenvolvimento local: http://localhost:8081  (usuário: user / senha: senha123)
 # Edite app/web/src ou app/server/src: o navegador e a API recarregam sozinhos.
 #
 #   docker compose up -d          sobe tudo
@@ -29,9 +29,9 @@ services:
       PGUSER: matias
       PGPASSWORD: dev
       PGDATABASE: matiassystem
-      APP_USER: matias
-      # hash de "matias123" (só para uso local). "$$" é o "$" escapado do compose.
-      APP_PASSWORD_HASH: "scrypt$$32768$$8$$1$$wGy525OepIU57K46oxxQEw==$$OhHf3g7ZaFq05aYfwblWZueQWdm3BuimU/NzwMa2EOp26ELedpXTCGMSlx9q+pTDjElNTZLRY0VSCDSkGbdagw=="
+      APP_USER: user
+      # hash de "senha123" (só para uso local). "$$" é o "$" escapado do compose.
+      APP_PASSWORD_HASH: "scrypt$$32768$$8$$1$$miCrqMHfnF8NPaERUdZowA==$$QAK/EeP1yYu3pQcfHfVE/AviyDImj/RYqMrP7VdfthnKxUTKeTWT18bCEIvG0Ksj8VEsHUf1GX/gnnJTN47IUQ=="
       COOKIE_SECURE: "false"
     volumes:
       - ./app/server:/server
