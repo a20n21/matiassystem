@@ -13,3 +13,10 @@ server:
     enabled: true
     ingressClassName: traefik
     hostname: argocd.localhost
+
+repoServer:
+  livenessProbe:
+    timeoutSeconds: 5
+    failureThreshold: 5
+  readinessProbe:
+    timeoutSeconds: 5
