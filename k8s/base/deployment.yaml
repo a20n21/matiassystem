@@ -63,12 +63,12 @@ spec:
           # Na subida o app espera o banco e aplica as migrações: até ~2 min antes de desistir
           startupProbe:
             httpGet: { path: /healthz, port: 8080 }
-            periodSeconds: 60
+            periodSeconds: 5
             failureThreshold: 24
           # Só recebe tráfego com o banco respondendo
           readinessProbe:
             httpGet: { path: /readyz, port: 8080 }
-            periodSeconds: 60
+            periodSeconds: 10
           # Reinicia só se o processo travar (não depende do banco)
           livenessProbe:
             httpGet: { path: /healthz, port: 8080 }
